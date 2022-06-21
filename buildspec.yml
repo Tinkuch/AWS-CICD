@@ -1,0 +1,35 @@
+version: 0.2
+
+env:
+  parameter-store:
+    SONARQUBE_TOKEN: "MySonaeQubeToken"
+    SONARQUBE_ENDPOINT: "MySonarQubeURL"
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto11
+  pre_build:
+    commands:
+      - echo "Starting Pre_build Stage"
+      - apt update && apt install -y jq
+      - echo "Installing Sonar Scanner ......."
+      - wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.4.0.2170-linux.zip
+      - unzip sonar-scanner-cli-4.4.0.2170-linux.zip
+      - mv sonar-scanner-4.4.0.2170-linux /opt/sonar-scanner
+      - chmod -R 775 /opt/sonar-scanner
+      - export PATH=$PATH:/sonar-scanner/bin/
+      - echo "stage pre_build completed"
+  build:
+    commands:
+      - echo Build started on `date`
+      - mvn clean install
+      - mvn dependency-check:check 
+      - mvn sonar:sonar -Dsonar.projectKey=JavaWebApp -Dsonar.host.url=$SONARQUBE_ENDPOINT -Dsonar.login=$SONARQUBE_TOKEN 
+  post_build:
+    commands:
+      - echo Build completed on `date`
+artifacts: 
+  files:
+   - appspec.yml
+   - 'target/**'
